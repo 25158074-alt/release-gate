@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<!-- This site is hosted on Netlify. Anyone can build and deploy a site
+     like this one for free: https://netlify.new/?utm_campaign=loops&utm_source=ai-legible&utm_medium=owned&utm_content=comment&utm_id=d6d12b0a-b510-4d3f-9a0f-8c96e24a3f3c
+     Netlify hosting facts for this site: static/SSR served via Netlify Edge. -->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Root Cause Race</title>
+<!--
+  ROOT CAUSE RACE — swap-in guide
+  To use real hypothesis data, edit the HYPOTHESES array near the top of the
+  <script> block below. Each entry needs:
+    id            unique string
+    name          display name shown on the card and (via legend) the 3D node
+    color         hex number, e.g. 0xff6b6b — used for the node and the swatch
+    finalConfidence  0–1, the confidence this hypothesis will converge to
+    rateFactor    relative animation speed (higher = reaches its target faster)
+    status        short present-tense phrase shown while running, e.g. "Tracing calls"
+    evidence      array of strings, shown in the verdict panel ONLY for the winner
+  The winner is whichever hypothesis has the highest finalConfidence.
+-->
+<style>
+  :root {
+    --bg: #eef1f5;
+    --panel-bg: #ffffff;
+    --panel-border: #d7dce3;
+    --text: #10151c;
+    --text-dim: #5b6672;
+    --track: #b7c0cb;
+    --accent: #1e6fd9;
+    --danger: #c53030;
+    color-scheme: light dark;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0a0d12;
+      --panel-bg: #10151d;
+      --panel-border: #232b36;
+      --text: #dbe4ee;
+      --text-dim: #7a8695;
+      --track: #2a3340;
+      --accent: #5b9dff;
+      --danger: #ff6b6b;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0a0d12;
+    --panel-bg: #10151d;
+    --panel-border: #232b36;
+    --text: #dbe4ee;
+    --text-dim: #7a8695;
+    --track: #2a3340;
+    --accent: #5b9dff;
+    --danger: #ff6b6b;
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    height: 100%;
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+    overflow-x: hidden;
+  }
+  body {
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  #app {
+    min-height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 20px clamp(14px, 3vw, 32px);
+    gap: 14px;
+  }
+  header { flex: 0 0 auto; }
+  .title {
+    font-family: "SF Mono", Consolas, monospace;
+    font-size: clamp(16px, 2vw, 20px);
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .subtitle {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-top: 2px;
+  }
+
+  main {
+    flex: 1 1 auto;
+    display: flex;
+    gap: 16px;
+    min-height: 0;
+  }
+  @media (max-width: 860px) {
+    main { flex-direction: column; }
+  }
+
+  #scene-wrap {
+    flex: 6 1 0;
+    position: relative;
+    min-height: 320px;
+    border: 1px solid var(--panel-border);
+    border-radius: 6px;
+    background: var(--panel-bg);
+    overflow: hidden;
+    cursor: grab;
+  }
+  #scene-wrap.dragging { cursor: grabbing; }
+  #scene-wrap canvas { display: block; width: 100%; height: 100%; }
+  .scene-hint {
+    position: absolute;
+    bottom: 10px;
+    left: 12px;
+    font-family: Consolas, monospace;
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    color: var(--text-dim);
+    opacity: 0.7;
+    pointer-events: none;
+  }
+
+  #panel {
+    flex: 4 1 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 240px;
+    overflow-y: auto;
+  }
+  .card {
+    border: 1px solid var(--panel-border);
+    background: var(--panel-bg);
+    border-radius: 6px;
+    padding: 12px 14px;
+    transition: opacity 0.4s ease, transform 0.3s ease;
+  }
+  .card-top {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .swatch {
+    width: 10px; height: 10px; border-radius: 50%;
+    flex: 0 0 auto;
+    box-shadow: 0 0 6px 1px currentColor;
+  }
+  .card-name { font-weight: 600; font-size: 13px; flex: 1 1 auto; }
+  .card-conf {
+    font-family: Consolas, monospace;
+    font-size: 12px;
+    color: var(--text-dim);
+    font-variant-numeric: tabular-nums;
+  }
+  .bar {
+    height: 5px;
+    border-radius: 3px;
+    background: var(--track);
+    overflow: hidden;
+    margin-bottom: 6px;
+  }
+  .bar-fill {
+    height: 100%;
+    width: 0%;
+    border-radius: 3px;
+    transition: width 0.25s ease-out;
+  }
+  .card-status {
+    font-size: 11px;
+    color: var(--text-dim);
+    font-family: Consolas, monospace;
+  }
+  .card.won { border-color: var(--accent); }
+  .card.lost { opacity: 0.55; }
+
+  #controls {
+    flex: 0 0 auto;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+  button {
+    font-family: Consolas, monospace;
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 10px 18px;
+    border-radius: 5px;
+    border: 1px solid var(--panel-border);
+    background: var(--panel-bg);
+    color: var(--text);
+    cursor: pointer;
+  }
+  #runBtn { border-color: var(--accent); color: var(--accent); }
+  #runBtn:active, #resetBtn:active { transform: translateY(1px); }
+
+  #verdict {
+    flex: 0 0 auto;
+    border: 1px solid var(--accent);
+    border-radius: 6px;
+    background: var(--panel-bg);
+    padding: 14px 16px;
+    opacity: 0;
+    transform: translateY(6px);
+    max-height: 0;
+    overflow: hidden;
+    transition: opacity 0.4s ease, transform 0.4s ease, max-height 0.4s ease, padding 0.4s ease;
+  }
+  #verdict.show {
+    opacity: 1;
+    transform: translateY(0);
+    max-height: 260px;
+    padding: 14px 16px;
+  }
+  #verdict h3 {
+    margin: 0 0 4px 0;
+    font-size: 14px;
+    font-family: Consolas, monospace;
+    letter-spacing: 0.04em;
+  }
+  #verdict .verdict-conf {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-bottom: 10px;
+    font-family: Consolas, monospace;
+  }
+  #verdict ul { margin: 0; padding-left: 18px; font-size: 12.5px; line-height: 1.6; }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="title">Root Cause Race</div>
+    <div class="subtitle">Parallel hypothesis testing for an active failure</div>
+  </header>
+
+  <main>
+    <div id="scene-wrap">
+      <div class="scene-hint">drag to orbit</div>
+    </div>
+    <div id="panel"></div>
+  </main>
+
+  <div id="controls">
+    <button id="runBtn">Run Investigation</button>
+    <button id="resetBtn">Reset</button>
+  </div>
+
+  <div id="verdict">
+    <h3 id="verdictName"></h3>
+    <div class="verdict-conf" id="verdictConf"></div>
+    <ul id="verdictEvidence"></ul>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  var HYPOTHESES = [
+    {
+      id: "race", name: "Race Condition", color: 0xff6b6b,
+      finalConfidence: 0.83, rateFactor: 1.15,
+      status: "Tracing concurrent access",
+      evidence: [
+        "Failure only reproduces under concurrent load (3+ simultaneous requests)",
+        "Stack trace shows shared mutable state accessed without a lock",
+        "Reproduced 8 of 10 times after injecting an artificial delay"
+      ]
+    },
+    {
+      id: "config", name: "Config Drift", color: 0xf5c542,
+      finalConfidence: 0.41, rateFactor: 0.9,
+      status: "Diffing environment values",
+      evidence: []
+    },
+    {
+      id: "code", name: "Recent Code Change", color: 0x53c7f0,
+      finalConfidence: 0.27, rateFactor: 1.4,
+      status: "Walking recent commits",
+      evidence: []
+    },
+    {
+      id: "input", name: "Bad Input Data", color: 0xa78bfa,
+      finalConfidence: 0.12, rateFactor: 0.7,
+      status: "Sampling request payloads",
+      evidence: []
+    }
+  ];
+
+  var OUTER_R = 6.2, INNER_R = 1.7, WIN_TARGET = HYPOTHESES.reduce(function (a, b) {
+    return b.finalConfidence > a.finalConfidence ? b : a;
+  });
+
+  var sceneWrap = document.getElementById("scene-wrap");
+  var panel = document.getElementById("panel");
+  var runBtn = document.getElementById("runBtn");
+  var resetBtn = document.getElementById("resetBtn");
+  var verdictEl = document.getElementById("verdict");
+
+  // ---------- side panel cards ----------
+  HYPOTHESES.forEach(function (h, i) {
+    var colorHex = "#" + h.color.toString(16).padStart(6, "0");
+    var card = document.createElement("div");
+    card.className = "card";
+    card.id = "card-" + h.id;
+    card.style.order = i;
+    card.innerHTML =
+      '<div class="card-top">' +
+        '<span class="swatch" style="background:' + colorHex + ';color:' + colorHex + '"></span>' +
+        '<span class="card-name">' + h.name + '</span>' +
+        '<span class="card-conf" id="conf-' + h.id + '">0%</span>' +
+      '</div>' +
+      '<div class="bar"><div class="bar-fill" id="bar-' + h.id + '" style="background:' + colorHex + '"></div></div>' +
+      '<div class="card-status" id="status-' + h.id + '">Waiting</div>';
+    panel.appendChild(card);
+    h._conf = 0;
+    h._card = card;
+  });
+  panel.style.display = "flex";
+  panel.style.flexDirection = "column";
+
+  // ---------- three.js scene ----------
+  var scene = new THREE.Scene();
+  var camera = new THREE.PerspectiveCamera(48, 1, 0.1, 100);
+  camera.position.set(0, 3.2, 13);
+  camera.lookAt(0, 0, 0);
+
+  var renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  sceneWrap.appendChild(renderer.domElement);
+
+  scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+  var dLight = new THREE.DirectionalLight(0xffffff, 0.9);
+  dLight.position.set(6, 9, 7);
+  scene.add(dLight);
+
+  var group = new THREE.Group();
+  scene.add(group);
+
+  // failure node
+  var failureGeo = new THREE.IcosahedronGeometry(1.05, 1);
+  var failureMat = new THREE.MeshStandardMaterial({
+    color: 0xff3b3b, emissive: 0x7a0000, emissiveIntensity: 0.9, roughness: 0.4
+  });
+  var failureNode = new THREE.Mesh(failureGeo, failureMat);
+  group.add(failureNode);
+
+  // track ring
+  var trackPts = [];
+  for (var a = 0; a <= 64; a++) {
+    var t = (a / 64) * Math.PI * 2;
+    trackPts.push(new THREE.Vector3(Math.cos(t) * OUTER_R, 0, Math.sin(t) * OUTER_R));
+  }
+  var trackGeo = new THREE.BufferGeometry().setFromPoints(trackPts);
+  var trackMat = new THREE.LineBasicMaterial({ color: 0x5a6b7d, transparent: true, opacity: 0.5 });
+  group.add(new THREE.Line(trackGeo, trackMat));
+
+  // hypothesis nodes
+  HYPOTHESES.forEach(function (h, i) {
+    var angle = (i / HYPOTHESES.length) * Math.PI * 2;
+    h._angle = angle;
+    var geo = new THREE.SphereGeometry(0.5, 24, 24);
+    var mat = new THREE.MeshStandardMaterial({
+      color: h.color, emissive: h.color, emissiveIntensity: 0.35,
+      roughness: 0.45, transparent: true, opacity: 1
+    });
+    var mesh = new THREE.Mesh(geo, mat);
+    mesh.position.set(Math.cos(angle) * OUTER_R, 0, Math.sin(angle) * OUTER_R);
+    group.add(mesh);
+    h._mesh = mesh;
+  });
+
+  function resize() {
+    var w = sceneWrap.clientWidth, hgt = sceneWrap.clientHeight;
+    if (!w || !hgt) return;
+    camera.aspect = w / hgt;
+    camera.updateProjectionMatrix();
+    renderer.setSize(w, hgt);
+  }
+  window.addEventListener("resize", resize);
+  resize();
+
+  // ---------- manual drag-to-orbit (no OrbitControls) ----------
+  var dragging = false, lastX = 0, lastY = 0;
+  var baseRotY = -0.4, baseRotX = 0.15;
+  group.rotation.y = baseRotY;
+  group.rotation.x = baseRotX;
+  var autoRotate = true;
+
+  function pointerDown(x, y) {
+    dragging = true; autoRotate = false;
+    lastX = x; lastY = y;
+    sceneWrap.classList.add("dragging");
+  }
+  function pointerMove(x, y) {
+    if (!dragging) return;
+    var dx = x - lastX, dy = y - lastY;
+    lastX = x; lastY = y;
+    group.rotation.y += dx * 0.006;
+    group.rotation.x = Math.max(-0.7, Math.min(0.7, group.rotation.x + dy * 0.006));
+  }
+  function pointerUp() {
+    dragging = false;
+    sceneWrap.classList.remove("dragging");
+  }
+
+  sceneWrap.addEventListener("pointerdown", function (e) {
+    sceneWrap.setPointerCapture(e.pointerId);
+    pointerDown(e.clientX, e.clientY);
+  });
+  sceneWrap.addEventListener("pointermove", function (e) { pointerMove(e.clientX, e.clientY); });
+  sceneWrap.addEventListener("pointerup", pointerUp);
+  sceneWrap.addEventListener("pointercancel", pointerUp);
+
+  // ---------- run / reset state machine ----------
+  var running = false, complete = false, startTime = 0;
+  var DURATION = 4200;
+
+  function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
+
+  function resetState() {
+    running = false; complete = false;
+    HYPOTHESES.forEach(function (h) {
+      h._conf = 0;
+      h._mesh.position.set(Math.cos(h._angle) * OUTER_R, 0, Math.sin(h._angle) * OUTER_R);
+      h._mesh.scale.set(1, 1, 1);
+      h._mesh.material.opacity = 1;
+      h._mesh.material.emissiveIntensity = 0.35;
+      h._card.classList.remove("won", "lost");
+      document.getElementById("conf-" + h.id).textContent = "0%";
+      document.getElementById("bar-" + h.id).style.width = "0%";
+      document.getElementById("status-" + h.id).textContent = "Waiting";
+      h._card.style.order = HYPOTHESES.indexOf(h);
+    });
+    verdictEl.classList.remove("show");
+    group.rotation.y = baseRotY;
+    group.rotation.x = baseRotX;
+    autoRotate = true;
+  }
+
+  function updateRunning(elapsed) {
+    var progress = Math.min(1, elapsed / DURATION);
+    HYPOTHESES.forEach(function (h) {
+      var localT = Math.min(1, progress * h.rateFactor);
+      var eased = easeOutCubic(localT);
+      h._conf = h.finalConfidence * eased;
+      var radius = OUTER_R - (OUTER_R - INNER_R) * eased * (h.finalConfidence);
+      h._mesh.position.set(Math.cos(h._angle) * radius, 0, Math.sin(h._angle) * radius);
+
+      var pct = Math.round(h._conf * 100);
+      document.getElementById("conf-" + h.id).textContent = pct + "%";
+      document.getElementById("bar-" + h.id).style.width = pct + "%";
+      document.getElementById("status-" + h.id).textContent = h.status + "\u2026";
+    });
+
+    // re-sort cards by confidence, highest first
+    HYPOTHESES.slice().sort(function (a, b) { return b._conf - a._conf; })
+      .forEach(function (h, i) { h._card.style.order = i; });
+
+    if (progress >= 1 && !complete) finish();
+  }
+
+  function finish() {
+    complete = true; running = false;
+
+    // snap every hypothesis to its exact final confidence, regardless of
+    // how far its staggered rate had actually gotten it
+    HYPOTHESES.forEach(function (h) {
+      h._conf = h.finalConfidence;
+      var radius = OUTER_R - (OUTER_R - INNER_R) * h.finalConfidence;
+      h._mesh.position.set(Math.cos(h._angle) * radius, 0, Math.sin(h._angle) * radius);
+      var pct = Math.round(h._conf * 100);
+      document.getElementById("conf-" + h.id).textContent = pct + "%";
+      document.getElementById("bar-" + h.id).style.width = pct + "%";
+    });
+    HYPOTHESES.slice().sort(function (a, b) { return b._conf - a._conf; })
+      .forEach(function (h, i) { h._card.style.order = i; });
+
+    HYPOTHESES.forEach(function (h) {
+      var isWinner = h.id === WIN_TARGET.id;
+      h._mesh.material.opacity = isWinner ? 1 : 0.5;
+      h._mesh.material.emissiveIntensity = isWinner ? 1.1 : 0.2;
+      h._mesh.scale.set(isWinner ? 1.4 : 0.9, isWinner ? 1.4 : 0.9, isWinner ? 1.4 : 0.9);
+      h._card.classList.add(isWinner ? "won" : "lost");
+      document.getElementById("status-" + h.id).textContent = isWinner ? "Confirmed" : "Ruled out";
+    });
+
+    document.getElementById("verdictName").textContent =
+      "\u2713 " + WIN_TARGET.name + " confirmed as root cause";
+    document.getElementById("verdictConf").textContent =
+      "Final confidence: " + Math.round(WIN_TARGET.finalConfidence * 100) + "%";
+    var ul = document.getElementById("verdictEvidence");
+    ul.innerHTML = "";
+    WIN_TARGET.evidence.forEach(function (e) {
+      var li = document.createElement("li");
+      li.textContent = e;
+      ul.appendChild(li);
+    });
+    verdictEl.classList.add("show");
+  }
+
+  runBtn.addEventListener("click", function () {
+    if (complete) resetState();
+    running = true;
+    startTime = performance.now();
+  });
+  resetBtn.addEventListener("click", resetState);
+
+  // ---------- render loop ----------
+  function animate(now) {
+    requestAnimationFrame(animate);
+
+    var pulse = 1 + Math.sin(now * 0.003) * 0.06;
+    failureNode.scale.set(pulse, pulse, pulse);
+    failureNode.rotation.y += 0.004;
+
+    if (autoRotate && !dragging) group.rotation.y += 0.0016;
+
+    if (running) updateRunning(now - startTime);
+
+    renderer.render(scene, camera);
+  }
+  requestAnimationFrame(animate);
+})();
+</script>
+<script async src="../.netlify/scripts/ar" data-netlify-deploy-id="6ab8c0614e08ccc0aa78eabf" data-netlify-site-id="d6d12b0a-b510-4d3f-9a0f-8c96e24a3f3c" data-agent-runner-id="6ab8bf98c9d95d8c89521d22"></script>
+</body>
+</html>

@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<!-- This site is hosted on Netlify. Anyone can build and deploy a site
+     like this one for free: https://netlify.new/?utm_campaign=loops&utm_source=ai-legible&utm_medium=owned&utm_content=comment&utm_id=d6d12b0a-b510-4d3f-9a0f-8c96e24a3f3c
+     Netlify hosting facts for this site: static/SSR served via Netlify Edge. -->
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Release Gate - Submission Package</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Segoe UI",system-ui,sans-serif;background:#090d13;color:#c8d8ea;
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:40px 20px}
+.box{width:100%;max-width:680px}
+.title{font-family:Consolas,monospace;font-size:22px;font-weight:700;letter-spacing:.1em;
+  color:#e8f4ff;text-transform:uppercase;margin-bottom:6px}
+.sub{font-size:13px;color:#4a6278;letter-spacing:.04em;margin-bottom:40px}
+.section{margin-bottom:32px}
+.section-label{font-family:Consolas,monospace;font-size:9px;letter-spacing:.18em;
+  text-transform:uppercase;color:#2d4157;margin-bottom:10px}
+.links{display:flex;flex-direction:column;gap:6px}
+a.card{display:flex;align-items:center;justify-content:space-between;
+  padding:14px 18px;background:#0e1520;border:1px solid #1e2d42;border-radius:4px;
+  text-decoration:none;transition:border-color .2s,background .2s;cursor:pointer}
+a.card:hover{border-color:#243347;background:#131c2b}
+.card-left{display:flex;align-items:center;gap:14px}
+.card-icon{font-size:18px;width:28px;text-align:center}
+.card-name{font-size:13px;font-weight:600;color:#e8f4ff;display:block;margin-bottom:2px}
+.card-desc{font-size:11px;color:#4a6278}
+.card-arrow{color:#2d4157;font-size:16px}
+.card.featured{border-color:#1e90ff}
+.card.featured .card-name{color:#60a5fa}
+.tag{display:inline-block;font-family:Consolas,monospace;font-size:9px;letter-spacing:.1em;
+  text-transform:uppercase;padding:2px 8px;border-radius:12px;background:#131c2b;
+  color:#4ade80;margin-left:8px;vertical-align:middle}
+.footer{margin-top:48px;font-family:Consolas,monospace;font-size:10px;
+  color:#2d4157;letter-spacing:.06em;text-align:center}
+</style>
+</head>
+<body>
+<div class="box">
+  <div class="title">Release Gate</div>
+  <div class="sub">IBM Bob 2.0 Hackathon &nbsp;&middot;&nbsp; Submission Package &nbsp;&middot;&nbsp; github.com/25158074-alt/release-gate</div>
+
+  <div class="section">
+    <div class="section-label">Start Here</div>
+    <div class="links">
+      <a class='card featured' href='pitch-deck.html'>
+        <div class="card-left">
+          <div class="card-icon">&#128202;</div>
+          <div>
+            <span class="card-name">Pitch Deck <span class="tag">open in browser</span></span>
+            <span class="card-desc">7-slide visual presentation — problem, solution, agents, demo story, impact</span>
+          </div>
+        </div>
+        <div class="card-arrow">&#8250;</div>
+      </a>
+      <a class='card featured' href='../demo/root-cause-race.html'>
+        <div class="card-left">
+          <div class="card-icon">&#127988;</div>
+          <div>
+            <span class="card-name">Visual Dashboard <span class="tag">interactive</span></span>
+            <span class="card-desc">3D hypothesis race — drag to orbit, click Run Investigation, watch agents compete</span>
+          </div>
+        </div>
+        <div class="card-arrow">&#8250;</div>
+      </a>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Documentation</div>
+    <div class="links">
+      <a class="card" href="PROJECT-BRIEF.md">
+        <div class="card-left">
+          <div class="card-icon">&#128196;</div>
+          <div>
+            <span class="card-name">Project Brief</span>
+            <span class="card-desc">One-page summary — what it is, the demo story, Bob 2.0 feature map</span>
+          </div>
+        </div>
+        <div class="card-arrow">&#8250;</div>
+      </a>
+      <a class="card" href="ARCHITECTURE.md">
+        <div class="card-left">
+          <div class="card-icon">&#127963;</div>
+          <div>
+            <span class="card-name">Architecture</span>
+            <span class="card-desc">All 4 phases, all 5 agents, scoring formula, file structure, extension guide</span>
+          </div>
+        </div>
+        <div class="card-arrow">&#8250;</div>
+      </a>
+      <a class="card" href="SETUP-GUIDE.md">
+        <div class="card-left">
+          <div class="card-icon">&#9881;</div>
+          <div>
+            <span class="card-name">Setup Guide</span>
+            <span class="card-desc">Install Node.js &rarr; npm install &rarr; demo in 3 commands. Real PR setup included.</span>
+          </div>
+        </div>
+        <div class="card-arrow">&#8250;</div>
+      </a>
+      <a class="card" href="DEMO-SCRIPT.md">
+        <div class="card-left">
+          <div class="card-icon">&#127908;</div>
+          <div>
+            <span class="card-name">Demo Script</span>
+            <span class="card-desc">4-minute walkthrough for judges — what to say, what to click, Q&amp;A prep</span>
+          </div>
+        </div>
+        <div class="card-arrow">&#8250;</div>
+      </a>
+      <a class="card" href="IMPACT-METRICS.md">
+        <div class="card-left">
+          <div class="card-icon">&#128200;</div>
+          <div>
+            <span class="card-name">Impact Metrics</span>
+            <span class="card-desc">Before/after benchmarks, measurement framework, ROI estimates</span>
+          </div>
+        </div>
+        <div class="card-arrow">&#8250;</div>
+      </a>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Quick Commands</div>
+    <div style="background:#0e1520;border:1px solid #1e2d42;border-radius:4px;padding:16px 18px;
+      font-family:Consolas,monospace;font-size:12px;color:#4a6278;line-height:2">
+      <span style="color:#2d4157"># offline demo (no API keys needed)</span><br/>
+      <span style="color:#60a5fa">node src/index.js demo</span><br/><br/>
+      <span style="color:#2d4157"># gate a real PR</span><br/>
+      <span style="color:#60a5fa">node src/index.js gate 42 my-org my-repo</span><br/><br/>
+      <span style="color:#2d4157"># scan all open PRs in background</span><br/>
+      <span style="color:#60a5fa">node src/background.js my-org my-repo</span>
+    </div>
+  </div>
+
+  <div class="footer">Release Gate &nbsp;&middot;&nbsp; IBM Bob 2.0 Hackathon &nbsp;&middot;&nbsp; MIT License</div>
+</div>
+<script async src="../.netlify/scripts/ar" data-netlify-deploy-id="6ab8c0614e08ccc0aa78eabf" data-netlify-site-id="d6d12b0a-b510-4d3f-9a0f-8c96e24a3f3c" data-agent-runner-id="6ab8bf98c9d95d8c89521d22"></script>
+</body>
+</html>
