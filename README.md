@@ -7,3 +7,7 @@ Static submission package:
 - `submission/pitch-deck.html` — browser pitch deck
 - `demo/root-cause-race.html` — interactive visual dashboard
 - `submission/*.md` — project brief, architecture, setup, demo script, and impact metrics
+
+## Website
+
+[Open the deployed website](https://radiant-flan-33e4cb.netlify.app/)
