@@ -16,4 +16,4 @@ Serve the repository with any static web server, for example:
 python3 -m http.server 8000
 ```
 
-Then open <http://localhost:8000/>.
+Then open <https://radiant-flan-33e4cb.netlify.app/>.
