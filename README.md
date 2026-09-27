@@ -1,6 +1,6 @@
 # Release Gate
 
-Static submission package recovered from the deployed Netlify site:
+Static submission package:
 
 - `index.html` — package landing page
 - `submission/index.html` — submission hub
